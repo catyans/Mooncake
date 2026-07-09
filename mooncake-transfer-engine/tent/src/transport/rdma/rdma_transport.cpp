@@ -390,6 +390,13 @@ Status RdmaTransport::submitTransferTasks(
     static std::atomic<int> g_caller_threads(0);
     thread_local int tl_caller_id = g_caller_threads.fetch_add(1);
     int next_worker_idx = tl_caller_id;
+
+    // Skip per-request DeviceSelector when batch concurrency is high enough:
+    // many requests already distribute across workers/NICs via round-robin.
+    auto device_selector_ptr = workers_->getDeviceSelector();
+    const size_t num_devices = device_selector_ptr ? device_selector_ptr->numDevices() : 0;
+    const bool use_multipath = (num_devices > 1) && (request_list.size() < num_devices * 4);
+
     for (auto& request : request_list) {
         auto opcode = request.opcode;
         auto type = Platform::getLoader().getMemoryType(request.source);
@@ -423,7 +430,7 @@ Status RdmaTransport::submitTransferTasks(
 
         std::vector<int> slice_dev_ids;
         // Only if a single request is enough, we perform aggregated allocation
-        if (num_slices >= max_slice_count / 2) {
+        if (use_multipath && num_slices >= max_slice_count / 2) {
             std::string source_location = kWildcardLocation;
             auto source_locations =
                 Platform::getLoader().getLocation(request.source, 1, true);

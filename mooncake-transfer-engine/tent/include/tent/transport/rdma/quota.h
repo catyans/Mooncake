@@ -149,6 +149,8 @@ class DeviceSelector {
 
     void printTrafficStats();
 
+    size_t numDevices() const { return devices_.size(); }
+
     void fillDevicePriorities();
     int getDevicePriority(int dev_id) const;
 
