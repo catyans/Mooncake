@@ -44,9 +44,9 @@ bool ReceiverCapacityTracker::tryReserve(uint64_t bytes, uint64_t slots,
     const bool arithmetic_ok =
         checkedAdd(state_.current_bytes, bytes, &next_bytes) &&
         checkedAdd(state_.current_slots, slots, &next_slots);
-    const bool exceeds_capacity =
-        !arithmetic_ok || next_bytes > state_.capacity_bytes ||
-        next_slots > state_.capacity_slots;
+    const bool exceeds_capacity = !arithmetic_ok ||
+                                  next_bytes > state_.capacity_bytes ||
+                                  next_slots > state_.capacity_slots;
 
     if (exceeds_capacity && enforce_capacity) {
         ++state_.stalled_total;
@@ -108,8 +108,7 @@ bool appendReceiverCreditRunJsonl(const std::string& path,
           {"peak_slots", receiver.peak_slots},
           {"admitted_total", receiver.admitted_total},
           {"stalled_total", receiver.stalled_total},
-          {"capacity_violation_total",
-           receiver.capacity_violation_total},
+          {"capacity_violation_total", receiver.capacity_violation_total},
           {"invalid_release_total", receiver.invalid_release_total}}},
     };
 

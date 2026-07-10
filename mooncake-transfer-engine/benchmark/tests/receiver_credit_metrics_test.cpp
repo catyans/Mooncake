@@ -79,8 +79,8 @@ TEST(ReceiverCapacityTrackerTest, InvalidReleaseCannotMintCapacity) {
 
 TEST(ReceiverCapacityTrackerTest, AdditionOverflowFailsClosed) {
     ReceiverCapacityTracker tracker(std::numeric_limits<uint64_t>::max(), 2);
-    EXPECT_TRUE(tracker.tryReserve(std::numeric_limits<uint64_t>::max(), 1,
-                                   true));
+    EXPECT_TRUE(
+        tracker.tryReserve(std::numeric_limits<uint64_t>::max(), 1, true));
     EXPECT_FALSE(tracker.tryReserve(1, 1, true));
 
     const auto state = tracker.snapshot();

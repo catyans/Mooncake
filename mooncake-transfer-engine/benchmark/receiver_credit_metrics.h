@@ -41,8 +41,7 @@ struct ReceiverCapacitySnapshot {
 // when both dimensions fit.
 class ReceiverCapacityTracker {
    public:
-    ReceiverCapacityTracker(uint64_t capacity_bytes,
-                            uint64_t capacity_slots);
+    ReceiverCapacityTracker(uint64_t capacity_bytes, uint64_t capacity_slots);
 
     bool tryReserve(uint64_t bytes, uint64_t slots, bool enforce_capacity);
     bool release(uint64_t bytes, uint64_t slots);
