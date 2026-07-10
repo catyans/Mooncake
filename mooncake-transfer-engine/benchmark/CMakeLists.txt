@@ -74,4 +74,16 @@ if(BUILD_UNIT_TESTS)
     PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
             "${CMAKE_CURRENT_SOURCE_DIR}/../tent/include")
   add_test(NAME tebench_qos_metrics_test COMMAND tebench_qos_metrics_test)
+
+  add_executable(
+    tebench_receiver_credit_metrics_test
+    tests/receiver_credit_metrics_test.cpp receiver_credit_metrics.cpp)
+  target_link_libraries(tebench_receiver_credit_metrics_test
+                        PRIVATE transfer_engine gtest gtest_main)
+  target_include_directories(
+    tebench_receiver_credit_metrics_test
+    PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}"
+            "${CMAKE_CURRENT_SOURCE_DIR}/../tent/include")
+  add_test(NAME tebench_receiver_credit_metrics_test
+           COMMAND tebench_receiver_credit_metrics_test)
 endif()
