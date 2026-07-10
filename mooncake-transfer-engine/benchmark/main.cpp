@@ -110,15 +110,13 @@ int processBatchSizes(BenchRunner& runner, size_t block_size, size_t batch_size,
         auto total_duration = timer.lap_us();
         std::lock_guard<std::mutex> lock(mutex);
         stats.total_duration.add(total_duration);
-        for (auto val : transfer_duration) stats.transfer_duration.add(val);
+        stats.transfer_duration.add(transfer_duration);
         auto& group_stats = tight ? tight_stats : loose_stats;
         group_stats.total_duration.add(total_duration);
-        for (auto val : transfer_duration)
-            group_stats.transfer_duration.add(val);
+        group_stats.transfer_duration.add(transfer_duration);
         if (qos_enabled) {
             qos_stats[qos_class].total_duration.add(total_duration);
-            for (auto val : transfer_duration)
-                qos_stats[qos_class].transfer_duration.add(val);
+            qos_stats[qos_class].transfer_duration.add(transfer_duration);
         }
         return 0;
     });

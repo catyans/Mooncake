@@ -123,6 +123,10 @@ struct XferMetricStats {
 
     void add(double value) { samples.push_back(value); }
 
+    void add(const std::vector<double>& values) {
+        samples.insert(samples.end(), values.begin(), values.end());
+    }
+
     void clear() { samples.clear(); }
 
     size_t count() { return samples.size(); }
