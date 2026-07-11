@@ -774,6 +774,7 @@ double TENTBenchRunner::runSingleTransfer(uint64_t local_addr,
                                           uint64_t block_size,
                                           uint64_t batch_size, OpCode opcode,
                                           uint64_t deadline_ns) {
+    XferBenchTimer timer;
     uint64_t receiver_credit_request_id = 0;
     const uint64_t receiver_credit_bytes = block_size * batch_size;
     if (XferBenchConfig::receiver_credit_mode != "disabled") {
@@ -796,7 +797,6 @@ double TENTBenchRunner::runSingleTransfer(uint64_t local_addr,
         entry.deadline_ns = deadline_ns;
         requests.emplace_back(entry);
     }
-    XferBenchTimer timer;
     if (XferBenchConfig::notifi) {
         // Use target_addr as msg for verification by peer
         Notification notifi{"benchmark", std::to_string(target_addr)};
