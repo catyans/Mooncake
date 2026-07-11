@@ -81,8 +81,7 @@ int processBatchSizes(BenchRunner& runner, size_t block_size, size_t batch_size,
         timer.reset();
         std::vector<double> transfer_duration;
         if (mixed_opcode) {
-            while (timer.lap_us(false) <
-                   XferBenchConfig::duration * 1000000ull) {
+            const auto runConsistencyPair = [&]() {
                 uint8_t pattern = 0;
                 if (XferBenchConfig::check_consistency)
                     pattern =
@@ -99,6 +98,19 @@ int processBatchSizes(BenchRunner& runner, size_t block_size, size_t batch_size,
                     verifyData((void*)local_addr, block_size * batch_size,
                                pattern);
                 transfer_duration.push_back(val);
+            };
+            if (XferBenchConfig::receiver_credit_mode != "disabled" &&
+                XferBenchConfig::receiver_credit_operations > 0) {
+                for (uint64_t operation = 0;
+                     operation < XferBenchConfig::receiver_credit_operations;
+                     operation += 2) {
+                    runConsistencyPair();
+                }
+            } else {
+                while (timer.lap_us(false) <
+                       XferBenchConfig::duration * 1000000ull) {
+                    runConsistencyPair();
+                }
             }
         } else {
             const auto runOperation = [&]() {
@@ -252,9 +264,16 @@ int main(int argc, char* argv[]) {
             return EXIT_FAILURE;
         }
         if (!XferBenchConfig::target_seg_name.empty() &&
-            XferBenchConfig::op_type != "write") {
-            LOG(ERROR) << "receiver-credit capacity runs currently require "
-                          "--op_type=write";
+            XferBenchConfig::op_type != "write" &&
+            XferBenchConfig::op_type != "mix") {
+            LOG(ERROR) << "receiver-credit capacity runs require "
+                          "--op_type=write or mix";
+            return EXIT_FAILURE;
+        }
+        if (!XferBenchConfig::target_seg_name.empty() &&
+            XferBenchConfig::op_type == "mix" &&
+            XferBenchConfig::receiver_credit_operations % 2 != 0) {
+            LOG(ERROR) << "receiver_credit_operations must be even for mix";
             return EXIT_FAILURE;
         }
     }
