@@ -219,13 +219,28 @@ int main(int argc, char* argv[]) {
             LOG(ERROR) << "receiver_credit_grant_batch must be positive";
             return EXIT_FAILURE;
         }
-        if (receiver_credit_mode == "credit" &&
-            XferBenchConfig::receiver_credit_operations > 0 &&
+        if (!XferBenchConfig::target_seg_name.empty() &&
+            receiver_credit_mode == "credit" &&
+            XferBenchConfig::receiver_credit_operations == 0) {
+            LOG(ERROR) << "credit mode requires receiver_credit_operations";
+            return EXIT_FAILURE;
+        }
+        if (!XferBenchConfig::target_seg_name.empty() &&
+            receiver_credit_mode == "credit" &&
             XferBenchConfig::receiver_credit_operations %
                     XferBenchConfig::receiver_credit_grant_batch !=
                 0) {
             LOG(ERROR) << "receiver_credit_operations must be divisible by "
                           "receiver_credit_grant_batch";
+            return EXIT_FAILURE;
+        }
+        if (!XferBenchConfig::target_seg_name.empty() &&
+            (XferBenchConfig::start_block_size !=
+                 XferBenchConfig::max_block_size ||
+             XferBenchConfig::start_batch_size !=
+                 XferBenchConfig::max_batch_size)) {
+            LOG(ERROR) << "receiver-credit runs require one block and batch "
+                          "size";
             return EXIT_FAILURE;
         }
         if (!XferBenchConfig::target_seg_name.empty() &&
