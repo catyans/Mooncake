@@ -51,6 +51,27 @@ DEFINE_double(qos_link_capacity_gbps, 0.0,
               "Link capacity in GB/s for total utilization (0 reports N/A).");
 DEFINE_string(qos_output_jsonl, "",
               "Append versioned QoS metric records to this JSONL file.");
+DEFINE_string(receiver_credit_mode, "disabled",
+              "Benchmark-only receiver capacity mode: disabled|fixed|credit.");
+DEFINE_uint64(receiver_capacity_bytes, 0,
+              "Receiver byte capacity used by fixed/credit experiments.");
+DEFINE_uint64(receiver_capacity_slots, 0,
+              "Receiver request-slot capacity used by fixed/credit experiments.");
+DEFINE_uint64(receiver_consumer_delay_us, 0,
+              "Delay before the receiver returns bytes and slots.");
+DEFINE_uint64(receiver_credit_grant_timeout_ms, 10000,
+              "Maximum time an initiator waits for a receiver grant.");
+DEFINE_string(receiver_credit_output_jsonl, "",
+              "Target-side receiver-credit result JSONL output.");
+DEFINE_string(receiver_credit_run_id, "", "Receiver-credit experiment run ID.");
+DEFINE_string(receiver_credit_condition, "normal",
+              "Receiver-credit experiment condition label.");
+DEFINE_int32(receiver_credit_sender_count, 0,
+             "Expected sender process count for the target report.");
+DEFINE_int32(receiver_credit_repetition, 0,
+             "Receiver-credit experiment repetition number.");
+DEFINE_double(receiver_credit_oracle_throughput_gbps, 0.0,
+              "Externally measured oracle throughput for comparison.");
 DEFINE_int32(local_gpu_id, 0, "Local GPU ID to be used, -1 for all GPUs");
 DEFINE_int32(target_gpu_id, 0, "Target GPU ID to be used, -1 for all GPUs");
 DEFINE_string(metadata_type, "p2p",
@@ -92,6 +113,17 @@ bool XferBenchConfig::deadline_bw_arbitration = false;
 std::string XferBenchConfig::qos_classes;
 double XferBenchConfig::qos_link_capacity_gbps = 0.0;
 std::string XferBenchConfig::qos_output_jsonl;
+std::string XferBenchConfig::receiver_credit_mode;
+uint64_t XferBenchConfig::receiver_capacity_bytes = 0;
+uint64_t XferBenchConfig::receiver_capacity_slots = 0;
+uint64_t XferBenchConfig::receiver_consumer_delay_us = 0;
+uint64_t XferBenchConfig::receiver_credit_grant_timeout_ms = 0;
+std::string XferBenchConfig::receiver_credit_output_jsonl;
+std::string XferBenchConfig::receiver_credit_run_id;
+std::string XferBenchConfig::receiver_credit_condition;
+int XferBenchConfig::receiver_credit_sender_count = 0;
+int XferBenchConfig::receiver_credit_repetition = 0;
+double XferBenchConfig::receiver_credit_oracle_throughput_gbps = 0.0;
 
 std::string XferBenchConfig::metadata_type;
 std::string XferBenchConfig::metadata_url_list;
@@ -124,6 +156,18 @@ void XferBenchConfig::loadFromFlags() {
     qos_classes = FLAGS_qos_classes;
     qos_link_capacity_gbps = FLAGS_qos_link_capacity_gbps;
     qos_output_jsonl = FLAGS_qos_output_jsonl;
+    receiver_credit_mode = FLAGS_receiver_credit_mode;
+    receiver_capacity_bytes = FLAGS_receiver_capacity_bytes;
+    receiver_capacity_slots = FLAGS_receiver_capacity_slots;
+    receiver_consumer_delay_us = FLAGS_receiver_consumer_delay_us;
+    receiver_credit_grant_timeout_ms = FLAGS_receiver_credit_grant_timeout_ms;
+    receiver_credit_output_jsonl = FLAGS_receiver_credit_output_jsonl;
+    receiver_credit_run_id = FLAGS_receiver_credit_run_id;
+    receiver_credit_condition = FLAGS_receiver_credit_condition;
+    receiver_credit_sender_count = FLAGS_receiver_credit_sender_count;
+    receiver_credit_repetition = FLAGS_receiver_credit_repetition;
+    receiver_credit_oracle_throughput_gbps =
+        FLAGS_receiver_credit_oracle_throughput_gbps;
     duration = FLAGS_duration;
 
     metadata_type = FLAGS_metadata_type;

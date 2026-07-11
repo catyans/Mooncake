@@ -72,9 +72,11 @@ int processBatchSizes(BenchRunner& runner, size_t block_size, size_t batch_size,
         };
 
         XferBenchTimer timer;
-        while (timer.lap_us(false) < 1000000ull) {
-            runner.runSingleTransfer(local_addr, target_addr, block_size,
-                                     batch_size, opcode, deadlineNs());
+        if (XferBenchConfig::receiver_credit_mode == "disabled") {
+            while (timer.lap_us(false) < 1000000ull) {
+                runner.runSingleTransfer(local_addr, target_addr, block_size,
+                                         batch_size, opcode, deadlineNs());
+            }
         }
         timer.reset();
         std::vector<double> transfer_duration;
@@ -183,6 +185,37 @@ int main(int argc, char* argv[]) {
         !std::isfinite(XferBenchConfig::qos_link_capacity_gbps)) {
         LOG(ERROR) << "qos_link_capacity_gbps must be finite and non-negative";
         return EXIT_FAILURE;
+    }
+    const auto& receiver_credit_mode = XferBenchConfig::receiver_credit_mode;
+    if (receiver_credit_mode != "disabled" && receiver_credit_mode != "fixed" &&
+        receiver_credit_mode != "credit") {
+        LOG(ERROR) << "receiver_credit_mode must be disabled, fixed, or credit";
+        return EXIT_FAILURE;
+    }
+    if (receiver_credit_mode != "disabled") {
+        if (XferBenchConfig::backend != "tent" ||
+            XferBenchConfig::xport_type != "rdma") {
+            LOG(ERROR) << "receiver-credit experiments require tent RDMA";
+            return EXIT_FAILURE;
+        }
+        if (XferBenchConfig::receiver_capacity_bytes == 0 ||
+            XferBenchConfig::receiver_capacity_slots == 0) {
+            LOG(ERROR) << "receiver capacity bytes and slots must be positive";
+            return EXIT_FAILURE;
+        }
+        if (!XferBenchConfig::target_seg_name.empty() &&
+            (XferBenchConfig::start_num_threads != 1 ||
+             XferBenchConfig::max_num_threads != 1)) {
+            LOG(ERROR) << "the benchmark-only receiver-credit protocol requires "
+                          "one worker per sender process";
+            return EXIT_FAILURE;
+        }
+        if (!XferBenchConfig::target_seg_name.empty() &&
+            XferBenchConfig::op_type != "write") {
+            LOG(ERROR) << "receiver-credit capacity runs currently require "
+                          "--op_type=write";
+            return EXIT_FAILURE;
+        }
     }
     if (XferBenchConfig::deadline_tight_threads < 0 ||
         XferBenchConfig::deadline_tight_threads >

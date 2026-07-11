@@ -75,6 +75,18 @@ struct XferBenchConfig {
     static double qos_link_capacity_gbps;
     static std::string qos_output_jsonl;
 
+    static std::string receiver_credit_mode;
+    static uint64_t receiver_capacity_bytes;
+    static uint64_t receiver_capacity_slots;
+    static uint64_t receiver_consumer_delay_us;
+    static uint64_t receiver_credit_grant_timeout_ms;
+    static std::string receiver_credit_output_jsonl;
+    static std::string receiver_credit_run_id;
+    static std::string receiver_credit_condition;
+    static int receiver_credit_sender_count;
+    static int receiver_credit_repetition;
+    static double receiver_credit_oracle_throughput_gbps;
+
     static std::string metadata_type;
     static std::string metadata_url_list;
     static int rpc_server_port;
