@@ -46,7 +46,7 @@ namespace {
 constexpr const char* kReceiverCreditDemand = "receiver-credit-demand-v1";
 constexpr const char* kReceiverCreditRelease = "receiver-credit-release-v1";
 constexpr const char* kReceiverCreditGrant = "receiver-credit-grant-v1";
-constexpr useconds_t kReceiverCreditPollIntervalUs = 1;
+constexpr useconds_t kReceiverCreditPollIntervalUs = 10;
 
 uint64_t steadyNowUs() {
     const auto now = std::chrono::steady_clock::now().time_since_epoch();
