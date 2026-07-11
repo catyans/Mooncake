@@ -64,8 +64,7 @@ struct DelayedReceiverRelease {
     uint64_t due_us{0};
 };
 
-std::string demandKey(const std::string& sender_segment,
-                      uint64_t request_id) {
+std::string demandKey(const std::string& sender_segment, uint64_t request_id) {
     return sender_segment + "#" + std::to_string(request_id);
 }
 
@@ -76,8 +75,7 @@ double p99(std::vector<double> samples) {
     const size_t index = static_cast<size_t>(rank);
     const double fraction = rank - static_cast<double>(index);
     if (index + 1 == samples.size()) return samples[index];
-    return samples[index] * (1.0 - fraction) +
-           samples[index + 1] * fraction;
+    return samples[index] * (1.0 - fraction) + samples[index + 1] * fraction;
 }
 
 }  // namespace
@@ -285,17 +283,17 @@ int TENTBenchRunner::runTarget() {
         auto handle = sender_handles.find(demand.sender_segment);
         if (handle == sender_handles.end()) {
             SegmentID sender_handle = 0;
-            auto status = engine_->openSegment(sender_handle,
-                                               demand.sender_segment);
+            auto status =
+                engine_->openSegment(sender_handle, demand.sender_segment);
             if (!status.ok()) {
                 LOG(ERROR) << "Failed to open receiver-credit sender segment "
                            << demand.sender_segment << ": "
                            << status.ToString();
                 return false;
             }
-            handle = sender_handles.emplace(demand.sender_segment,
-                                            sender_handle)
-                         .first;
+            handle =
+                sender_handles.emplace(demand.sender_segment, sender_handle)
+                    .first;
         }
         nlohmann::json payload = {{"schema_version", 1},
                                   {"request_id", demand.request_id}};
@@ -346,8 +344,8 @@ int TENTBenchRunner::runTarget() {
                 ++completed;
                 completed_bytes += it->demand.bytes;
                 last_completion_us = now_us;
-                completion_latency_us.push_back(static_cast<double>(
-                    now_us - it->demand.arrival_us));
+                completion_latency_us.push_back(
+                    static_cast<double>(now_us - it->demand.arrival_us));
             }
             it = delayed.erase(it);
             released = true;
@@ -375,11 +373,9 @@ int TENTBenchRunner::runTarget() {
                 const auto request_id = payload.value("request_id", 0ull);
                 const auto key = demandKey(sender, request_id);
                 if (notification.name == kReceiverCreditDemand) {
-                    ReceiverDemand demand{sender,
-                                          request_id,
-                                          payload.value("bytes", 0ull),
-                                          payload.value("slots", 0ull),
-                                          steadyNowUs()};
+                    ReceiverDemand demand{
+                        sender, request_id, payload.value("bytes", 0ull),
+                        payload.value("slots", 0ull), steadyNowUs()};
                     if (sender.empty() || request_id == 0 ||
                         demand.bytes == 0 || demand.slots == 0 ||
                         payload.value("mode", "") != mode ||
@@ -462,8 +458,7 @@ int TENTBenchRunner::runTarget() {
     LOG(INFO) << "RECEIVER_CREDIT_RESULT mode=" << report.mode
               << " senders=" << report.sender_count
               << " offered=" << report.offered
-              << " completed=" << report.completed
-              << " capacity_violations="
+              << " completed=" << report.completed << " capacity_violations="
               << report.receiver.capacity_violation_total
               << " peak_bytes=" << report.receiver.peak_bytes
               << " peak_slots=" << report.receiver.peak_slots
@@ -483,7 +478,7 @@ int TENTBenchRunner::runTarget() {
 }
 
 int TENTBenchRunner::beginReceiverCreditTransfer(uint64_t request_id,
-                                                  uint64_t bytes) {
+                                                 uint64_t bytes) {
     nlohmann::json payload = {
         {"schema_version", 1},
         {"sender_segment", engine_->getSegmentName()},
@@ -534,7 +529,7 @@ int TENTBenchRunner::beginReceiverCreditTransfer(uint64_t request_id,
 }
 
 int TENTBenchRunner::finishReceiverCreditTransfer(uint64_t request_id,
-                                                   uint64_t bytes) {
+                                                  uint64_t bytes) {
     nlohmann::json payload = {{"schema_version", 1},
                               {"sender_segment", engine_->getSegmentName()},
                               {"request_id", request_id},

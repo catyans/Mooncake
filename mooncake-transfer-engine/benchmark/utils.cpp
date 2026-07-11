@@ -55,8 +55,9 @@ DEFINE_string(receiver_credit_mode, "disabled",
               "Benchmark-only receiver capacity mode: disabled|fixed|credit.");
 DEFINE_uint64(receiver_capacity_bytes, 0,
               "Receiver byte capacity used by fixed/credit experiments.");
-DEFINE_uint64(receiver_capacity_slots, 0,
-              "Receiver request-slot capacity used by fixed/credit experiments.");
+DEFINE_uint64(
+    receiver_capacity_slots, 0,
+    "Receiver request-slot capacity used by fixed/credit experiments.");
 DEFINE_uint64(receiver_consumer_delay_us, 0,
               "Delay before the receiver returns bytes and slots.");
 DEFINE_uint64(receiver_credit_grant_timeout_ms, 10000,

@@ -206,8 +206,9 @@ int main(int argc, char* argv[]) {
         if (!XferBenchConfig::target_seg_name.empty() &&
             (XferBenchConfig::start_num_threads != 1 ||
              XferBenchConfig::max_num_threads != 1)) {
-            LOG(ERROR) << "the benchmark-only receiver-credit protocol requires "
-                          "one worker per sender process";
+            LOG(ERROR)
+                << "the benchmark-only receiver-credit protocol requires "
+                   "one worker per sender process";
             return EXIT_FAILURE;
         }
         if (!XferBenchConfig::target_seg_name.empty() &&
