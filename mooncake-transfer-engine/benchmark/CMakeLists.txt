@@ -86,4 +86,10 @@ if(BUILD_UNIT_TESTS)
             "${CMAKE_CURRENT_SOURCE_DIR}/../tent/include")
   add_test(NAME tebench_receiver_credit_metrics_test
            COMMAND tebench_receiver_credit_metrics_test)
+
+  find_package(Python3 COMPONENTS Interpreter REQUIRED)
+  add_test(
+    NAME tebench_receiver_credit_verifier_test
+    COMMAND ${Python3_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/tests/verify_receiver_credit_results_test.py)
 endif()
