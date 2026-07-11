@@ -592,7 +592,8 @@ static inline int getGpuDeviceNumaID(int gpu_id) {
         LOG(WARNING) << "cudaDeviceGetPCIBusId: " << cudaGetErrorString(err);
         return 0;
     }
-    for (char* ch = pci_bus_id; (*ch = to_lower(*ch)); ch++);
+    for (char* ch = pci_bus_id; (*ch = to_lower(*ch)); ch++)
+        ;
     return getNumaNodeFromPciDevice(pci_bus_id);
 }
 #elif defined(USE_HIP)
