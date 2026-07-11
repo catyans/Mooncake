@@ -80,6 +80,8 @@ struct XferBenchConfig {
     static uint64_t receiver_capacity_slots;
     static uint64_t receiver_consumer_delay_us;
     static uint64_t receiver_credit_grant_timeout_ms;
+    static uint64_t receiver_credit_grant_batch;
+    static uint64_t receiver_credit_operations;
     static std::string receiver_credit_output_jsonl;
     static std::string receiver_credit_run_id;
     static std::string receiver_credit_condition;

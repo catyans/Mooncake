@@ -24,6 +24,7 @@
 #include <algorithm>
 #include <chrono>
 #include <deque>
+#include <limits>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -341,7 +342,7 @@ int TENTBenchRunner::runTarget() {
             if (!tracker.release(it->demand.bytes, it->demand.slots)) {
                 ++data_errors;
             } else {
-                ++completed;
+                completed += it->demand.slots;
                 completed_bytes += it->demand.bytes;
                 last_completion_us = now_us;
                 completion_latency_us.push_back(
@@ -385,7 +386,7 @@ int TENTBenchRunner::runTarget() {
                     }
                     if (first_demand_us == 0)
                         first_demand_us = demand.arrival_us;
-                    ++offered;
+                    offered += demand.slots;
                     if (mode == "fixed") {
                         if (!admit(demand, false)) ++data_errors;
                     } else if (!admit(demand, true)) {
@@ -477,14 +478,27 @@ int TENTBenchRunner::runTarget() {
     return 0;
 }
 
-int TENTBenchRunner::beginReceiverCreditTransfer(uint64_t request_id,
+int TENTBenchRunner::beginReceiverCreditTransfer(uint64_t* request_id,
                                                  uint64_t bytes) {
+    const bool lease_mode = XferBenchConfig::receiver_credit_mode == "credit";
+    if (lease_mode && receiver_credit_lease_id_ != 0) {
+        *request_id = receiver_credit_lease_id_;
+        ++receiver_credit_lease_used_;
+        return 0;
+    }
+    const uint64_t grant_batch =
+        lease_mode ? XferBenchConfig::receiver_credit_grant_batch : 1;
+    if (bytes > std::numeric_limits<uint64_t>::max() / grant_batch) {
+        LOG(ERROR) << "Receiver-credit lease byte count overflow";
+        return -1;
+    }
+    const uint64_t lease_bytes = bytes * grant_batch;
     nlohmann::json payload = {
         {"schema_version", 1},
         {"sender_segment", engine_->getSegmentName()},
-        {"request_id", request_id},
-        {"bytes", bytes},
-        {"slots", 1},
+        {"request_id", *request_id},
+        {"bytes", lease_bytes},
+        {"slots", grant_batch},
         {"mode", XferBenchConfig::receiver_credit_mode},
     };
     auto status = engine_->sendNotification(
@@ -494,7 +508,7 @@ int TENTBenchRunner::beginReceiverCreditTransfer(uint64_t request_id,
                    << status.ToString();
         return -1;
     }
-    if (XferBenchConfig::receiver_credit_mode == "fixed") return 0;
+    if (!lease_mode) return 0;
 
     const uint64_t deadline_us =
         steadyNowUs() +
@@ -512,7 +526,10 @@ int TENTBenchRunner::beginReceiverCreditTransfer(uint64_t request_id,
             try {
                 const auto grant = nlohmann::json::parse(notification.msg);
                 if (grant.value("schema_version", 0) == 1 &&
-                    grant.value("request_id", 0ull) == request_id) {
+                    grant.value("request_id", 0ull) == *request_id) {
+                    receiver_credit_lease_id_ = *request_id;
+                    receiver_credit_lease_used_ = 1;
+                    receiver_credit_lease_bytes_ = lease_bytes;
                     return 0;
                 }
             } catch (const std::exception& error) {
@@ -524,17 +541,35 @@ int TENTBenchRunner::beginReceiverCreditTransfer(uint64_t request_id,
         usleep(50);
     }
     LOG(ERROR) << "Timed out waiting for receiver-credit grant request_id="
-               << request_id;
+               << *request_id;
     return -1;
 }
 
 int TENTBenchRunner::finishReceiverCreditTransfer(uint64_t request_id,
                                                   uint64_t bytes) {
+    uint64_t release_bytes = bytes;
+    uint64_t release_slots = 1;
+    if (XferBenchConfig::receiver_credit_mode == "credit") {
+        if (request_id != receiver_credit_lease_id_ ||
+            receiver_credit_lease_used_ == 0) {
+            LOG(ERROR) << "Invalid receiver-credit lease state";
+            return -1;
+        }
+        if (receiver_credit_lease_used_ <
+            XferBenchConfig::receiver_credit_grant_batch) {
+            return 0;
+        }
+        release_bytes = receiver_credit_lease_bytes_;
+        release_slots = XferBenchConfig::receiver_credit_grant_batch;
+        receiver_credit_lease_id_ = 0;
+        receiver_credit_lease_used_ = 0;
+        receiver_credit_lease_bytes_ = 0;
+    }
     nlohmann::json payload = {{"schema_version", 1},
                               {"sender_segment", engine_->getSegmentName()},
                               {"request_id", request_id},
-                              {"bytes", bytes},
-                              {"slots", 1}};
+                              {"bytes", release_bytes},
+                              {"slots", release_slots}};
     auto status = engine_->sendNotification(
         handle_, Notification{kReceiverCreditRelease, payload.dump()});
     if (!status.ok()) {
@@ -678,7 +713,7 @@ double TENTBenchRunner::runSingleTransfer(uint64_t local_addr,
     const uint64_t receiver_credit_bytes = block_size * batch_size;
     if (XferBenchConfig::receiver_credit_mode != "disabled") {
         receiver_credit_request_id = ++receiver_credit_request_id_;
-        if (beginReceiverCreditTransfer(receiver_credit_request_id,
+        if (beginReceiverCreditTransfer(&receiver_credit_request_id,
                                         receiver_credit_bytes) != 0) {
             exit(EXIT_FAILURE);
         }

@@ -101,12 +101,24 @@ int processBatchSizes(BenchRunner& runner, size_t block_size, size_t batch_size,
                 transfer_duration.push_back(val);
             }
         } else {
-            while (timer.lap_us(false) <
-                   XferBenchConfig::duration * 1000000ull) {
+            const auto runOperation = [&]() {
                 auto val = runner.runSingleTransfer(local_addr, target_addr,
                                                     block_size, batch_size,
                                                     opcode, deadlineNs());
                 transfer_duration.push_back(val);
+            };
+            if (XferBenchConfig::receiver_credit_mode != "disabled" &&
+                XferBenchConfig::receiver_credit_operations > 0) {
+                for (uint64_t operation = 0;
+                     operation < XferBenchConfig::receiver_credit_operations;
+                     ++operation) {
+                    runOperation();
+                }
+            } else {
+                while (timer.lap_us(false) <
+                       XferBenchConfig::duration * 1000000ull) {
+                    runOperation();
+                }
             }
         }
         auto total_duration = timer.lap_us();
@@ -201,6 +213,19 @@ int main(int argc, char* argv[]) {
         if (XferBenchConfig::receiver_capacity_bytes == 0 ||
             XferBenchConfig::receiver_capacity_slots == 0) {
             LOG(ERROR) << "receiver capacity bytes and slots must be positive";
+            return EXIT_FAILURE;
+        }
+        if (XferBenchConfig::receiver_credit_grant_batch == 0) {
+            LOG(ERROR) << "receiver_credit_grant_batch must be positive";
+            return EXIT_FAILURE;
+        }
+        if (receiver_credit_mode == "credit" &&
+            XferBenchConfig::receiver_credit_operations > 0 &&
+            XferBenchConfig::receiver_credit_operations %
+                    XferBenchConfig::receiver_credit_grant_batch !=
+                0) {
+            LOG(ERROR) << "receiver_credit_operations must be divisible by "
+                          "receiver_credit_grant_batch";
             return EXIT_FAILURE;
         }
         if (!XferBenchConfig::target_seg_name.empty() &&

@@ -75,7 +75,7 @@ class TENTBenchRunner : public BenchRunner {
                              uint64_t block_size, uint64_t batch_size,
                              OpCode opcode, uint64_t deadline_ns);
 
-    int beginReceiverCreditTransfer(uint64_t request_id, uint64_t bytes);
+    int beginReceiverCreditTransfer(uint64_t* request_id, uint64_t bytes);
 
     int finishReceiverCreditTransfer(uint64_t request_id, uint64_t bytes);
 
@@ -93,6 +93,9 @@ class TENTBenchRunner : public BenchRunner {
     SegmentInfo info_;
     TransportType transport_hint_{UNSPEC};
     std::atomic<uint64_t> receiver_credit_request_id_{0};
+    uint64_t receiver_credit_lease_id_{0};
+    uint64_t receiver_credit_lease_used_{0};
+    uint64_t receiver_credit_lease_bytes_{0};
 
     std::vector<std::function<int(int)>> current_task_;
     std::vector<std::thread> threads_;
