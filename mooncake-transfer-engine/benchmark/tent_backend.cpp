@@ -46,6 +46,7 @@ namespace {
 constexpr const char* kReceiverCreditDemand = "receiver-credit-demand-v1";
 constexpr const char* kReceiverCreditRelease = "receiver-credit-release-v1";
 constexpr const char* kReceiverCreditGrant = "receiver-credit-grant-v1";
+constexpr useconds_t kReceiverCreditPollIntervalUs = 10;
 
 uint64_t steadyNowUs() {
     const auto now = std::chrono::steady_clock::now().time_since_epoch();
@@ -433,7 +434,7 @@ int TENTBenchRunner::runTarget() {
     while (g_tent_running) {
         processNotifications();
         processDueReleases();
-        usleep(50);
+        usleep(kReceiverCreditPollIntervalUs);
     }
 
     const uint64_t drain_deadline_us =
@@ -444,7 +445,7 @@ int TENTBenchRunner::runTarget() {
            steadyNowUs() < drain_deadline_us) {
         processNotifications();
         processDueReleases();
-        usleep(50);
+        usleep(kReceiverCreditPollIntervalUs);
     }
     if (!active.empty() || !pending.empty() || !delayed.empty()) {
         data_errors += active.size() + pending.size() + delayed.size();
@@ -618,7 +619,7 @@ int TENTBenchRunner::pollReceiverCreditGrants(bool wait_for_available) {
             }
         }
         if (!wait_for_available || !receiver_credit_leases_.empty()) return 0;
-        usleep(50);
+        usleep(kReceiverCreditPollIntervalUs);
     } while (steadyNowUs() < deadline_us);
 
     LOG(ERROR) << "Timed out waiting for receiver-credit lease";
