@@ -76,6 +76,7 @@ set(MOONCAKE_STORE_SOURCES
     replica_selection_config.cpp
     cached_replica_score_provider.cpp
     replica_placement_policy.cpp
+    replica_placement_shadow.cpp
     replica_transfer_signal_collector.cpp
     engram/engram_store.cpp)
 
