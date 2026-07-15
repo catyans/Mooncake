@@ -53,6 +53,8 @@ add_store_test(replica_transfer_signal_collector_test
                replica_transfer_signal_collector_test.cpp)
 add_store_test(replica_placement_policy_test replica_placement_policy_test.cpp)
 add_store_test(replica_placement_shadow_test replica_placement_shadow_test.cpp)
+add_store_test(replica_placement_master_shadow_test
+               replica_placement_master_shadow_test.cpp)
 add_test(
   NAME replica_selector_v2_env_v1_isolation_test
   COMMAND replica_selector_v2_test
