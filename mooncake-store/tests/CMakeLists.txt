@@ -55,6 +55,17 @@ add_store_test(replica_placement_policy_test replica_placement_policy_test.cpp)
 add_store_test(replica_placement_shadow_test replica_placement_shadow_test.cpp)
 add_store_test(replica_placement_master_shadow_test
                replica_placement_master_shadow_test.cpp)
+add_executable(replica_placement_shadow_overhead_benchmark
+               replica_placement_shadow_overhead_benchmark.cpp)
+target_link_libraries(
+  replica_placement_shadow_overhead_benchmark
+  PUBLIC mooncake_store
+         transfer_engine
+         cachelib_memory_allocator
+         ${ETCD_WRAPPER_LIB}
+         glog
+         ibverbs
+         pthread)
 add_test(
   NAME replica_selector_v2_env_v1_isolation_test
   COMMAND replica_selector_v2_test
