@@ -2,6 +2,8 @@
 
 #include "master_service.h"
 
+#include "master_metric_manager.h"
+
 #include <atomic>
 #include <chrono>
 #include <cstddef>
@@ -206,6 +208,51 @@ TEST_F(ReplicaPlacementMasterShadowTest,
     ASSERT_TRUE(counters.has_value());
     EXPECT_EQ(failures.load(std::memory_order_relaxed), 0);
     EXPECT_EQ(TotalObservations(*counters), kThreadCount * kIterations);
+    service.RemoveAll();
+}
+
+TEST_F(ReplicaPlacementMasterShadowTest,
+       PrometheusMetricsUseOnlyFixedCardinalityLabels) {
+    MasterServiceConfig config;
+    config.replica_placement_shadow_config = ExplicitSignalShadowConfig();
+    MasterService service(config);
+    ASSERT_EQ(
+        service.PublishReplicaPlacementSignalSnapshot(AvailableSnapshot(1)),
+        ReplicaPlacementSignalPublishStatus::PUBLISHED);
+    const UUID client_id = PrepareMemorySegment(service, "shadow_metrics");
+    const std::string secret_key = "must_not_appear_object_key_7f3a";
+    PutObject(service, client_id, secret_key);
+
+    ASSERT_TRUE(service.GetReplicaList(secret_key, "default").has_value());
+
+    ReplicaPlacementShadowResult synthetic;
+    synthetic.temperature = ReplicaTemperature::HOT;
+    synthetic.signal_status = ReplicaPlacementShadowSignalStatus::READY;
+    synthetic.plan.adjustments[Tier(ReplicaPlacementTier::LOCAL_DISK)].add = 2;
+    synthetic.plan.adjustments[Tier(ReplicaPlacementTier::MEMORY)].remove = 1;
+    synthetic.plan.degraded_reasons[0] =
+        ReplicaPlacementDegradedReason::REQUIRED_TIER_UNHEALTHY;
+    synthetic.plan.degraded_reason_count = 1;
+    MasterMetricManager::instance().observe_replica_placement_shadow(synthetic);
+
+    const std::string metrics =
+        MasterMetricManager::instance().serialize_metrics();
+    EXPECT_NE(
+        metrics.find("master_replica_placement_shadow_observations_total"),
+        std::string::npos);
+    EXPECT_NE(metrics.find("temperature=\"hot\",status=\"ready\""),
+              std::string::npos);
+    EXPECT_NE(metrics.find("temperature=\"hot\",tier=\"local_disk\""),
+              std::string::npos);
+    EXPECT_NE(metrics.find("temperature=\"hot\",tier=\"memory\""),
+              std::string::npos);
+    EXPECT_NE(metrics.find("reason=\"required_tier_unhealthy\""),
+              std::string::npos);
+    EXPECT_EQ(metrics.find(secret_key), std::string::npos);
+    EXPECT_EQ(metrics.find("tenant"), std::string::npos)
+        << "replica placement SHADOW metric labels must not contain tenants";
+    EXPECT_EQ(metrics.find("endpoint"), std::string::npos)
+        << "replica placement SHADOW metric labels must not contain endpoints";
     service.RemoveAll();
 }
 
